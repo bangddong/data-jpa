@@ -209,10 +209,11 @@ class MemberRepositoryTest {
 		em.flush();
 		em.clear();
 		//when
-		List<Member> members = memberRepository.findAll();
+		List<Member> members = memberRepository.findAll("member1");
 		//then
 		for (Member member : members) {
 			member.getTeam().getName();
+			System.out.println("member = " + member.getTeam().getClass());
 		}
 	}
 
