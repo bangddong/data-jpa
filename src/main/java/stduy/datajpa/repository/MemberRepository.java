@@ -8,14 +8,18 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.EntityGraph;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Lock;
 import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
+import org.springframework.data.jpa.repository.QueryHints;
 import org.springframework.data.repository.query.Param;
 
+import jakarta.persistence.LockModeType;
+import jakarta.persistence.QueryHint;
 import stduy.datajpa.dto.MemberDto;
 import stduy.datajpa.entity.Member;
 
-public interface MemberRepository extends JpaRepository<Member, Long> {
+public interface MemberRepository extends JpaRepository<Member, Long>, MemberRepositoryCustom {
 	List<Member> findByUsernameAndAgeGreaterThan(String username, int age);
 
 	@Query(name = "Member.findByUsername")
@@ -67,4 +71,13 @@ public interface MemberRepository extends JpaRepository<Member, Long> {
 	// @EntityGraph(attributePaths = {"team"})
 	@EntityGraph("Member.all")
 	List<Member> findEntityGraphByUsername(@Param("username")String username);
+
+	@QueryHints(value = @QueryHint(name = "org.hibernate.readOnly", value = "true"))
+	Member findReadOnlyByUsername(String username);
+
+	@QueryHints(value = { @QueryHint(name = "org.hibernate.readOnly", value = "true")}, forCounting = true)
+	Page<Member> findByUsername(String name, Pageable pageable);
+
+	@Lock(LockModeType.PESSIMISTIC_WRITE)
+	List<Member> findLockByUsername(String name);
 }
