@@ -9,6 +9,8 @@ import org.assertj.core.api.Assertions;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.data.domain.Example;
+import org.springframework.data.domain.ExampleMatcher;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Sort;
@@ -280,6 +282,110 @@ class MemberRepositoryTest {
 
 		// then
 		Assertions.assertThat(result.size()).isEqualTo(1);
+	}
+
+	@Test
+	public void queryByExample() throws Exception {
+	    // given
+		Team teamA = new Team("teamA");
+		em.persist(teamA);
+
+		Member m1 = new Member("m1", 0, teamA);
+		Member m2 = new Member("m2", 0, teamA);
+		em.persist(m1);
+		em.persist(m2);
+
+		em.flush();
+		em.clear();
+
+		// when
+
+	    // then
+		// Probe
+		Member member = new Member("m1");
+		Team team = new Team("teamA");
+		member.setTeam(team);
+
+		ExampleMatcher matcher = ExampleMatcher.matching()
+			.withIgnorePaths("age");
+
+		Example<Member> example = Example.of(member, matcher);
+
+		memberRepository.findAll(example);
+
+		List<Member> result = memberRepository.findAll(example);
+
+		assertThat(result.get(0).getUsername()).isEqualTo("m1");
+	}
+
+	@Test
+	public void projections() throws Exception {
+	    // given
+		Team teamA = new Team("teamA");
+		em.persist(teamA);
+
+		Member m1 = new Member("m1", 0, teamA);
+		Member m2 = new Member("m2", 0, teamA);
+		em.persist(m1);
+		em.persist(m2);
+
+		em.flush();
+		em.clear();
+
+	    // when
+		List<NestedClosedProjections> result = memberRepository.findProjectionsByUsername("m1", NestedClosedProjections.class);
+
+		for (NestedClosedProjections usernameOnly: result) {
+			System.out.println("usernameOnly = " + usernameOnly.getUsername());
+		}
+
+		// then
+	}
+
+	@Test
+	public void nativeQuery() throws Exception {
+	    // given
+		Team teamA = new Team("teamA");
+		em.persist(teamA);
+
+		Member m1 = new Member("m1", 0, teamA);
+		Member m2 = new Member("m2", 0, teamA);
+		em.persist(m1);
+		em.persist(m2);
+
+		em.flush();
+		em.clear();
+
+	    // when
+		Member result = memberRepository.findByNativeQuery("m1");
+		System.out.println("result = " + result);
+
+		// then
+	}
+
+	@Test
+	public void nativeQueryWithProjection() throws Exception {
+	    // given
+		Team teamA = new Team("teamA");
+		em.persist(teamA);
+
+		Member m1 = new Member("m1", 0, teamA);
+		Member m2 = new Member("m2", 0, teamA);
+		em.persist(m1);
+		em.persist(m2);
+
+		em.flush();
+		em.clear();
+
+	    // when
+		Page<MemberProjection> result = memberRepository.findByNativeProjection(PageRequest.of(0, 10));
+		List<MemberProjection> content = result.getContent();
+		for (MemberProjection memberProjection : content) {
+			System.out.println("memberProjection = " + memberProjection.getUsername());
+			System.out.println("memberProjection = " + memberProjection.getTeamName());
+		}
+
+		// then
 	}
 
 }
